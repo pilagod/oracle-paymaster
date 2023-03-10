@@ -8,7 +8,7 @@
     "compile-ts": "tsc --noEmit",
     "format": "prettier --write .",
     "lint": "prettier --check . && eslint --ignore-path .prettierignore \"./**/*.ts\"",
-    "test": "hardhat test"
+    "test": "hardhat test --network test"
   },
   "author": "pilagooood <pilagooood@gmail.com>",
   "license": "ISC",

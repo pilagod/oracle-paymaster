@@ -13,7 +13,8 @@ chai.use(chaiAsPromised)
 
 module.exports = {
     networks: {
-        localhost: {
+        test: {
+            chainId: 1337,
             url: "http://localhost:8545/",
             saveDeployments: false,
         },
@@ -21,7 +22,7 @@ module.exports = {
     solidity: {
         compilers: [
             {
-                version: "0.8.7",
+                version: "0.8.12",
                 settings: {
                     optimizer: {
                         enabled: true,
