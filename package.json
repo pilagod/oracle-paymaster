@@ -4,8 +4,8 @@
   "description": "",
   "main": "index.js",
   "scripts": {
-    "compile-sol": "hardhat compile --show-stack-traces --force",
-    "compile-ts": "tsc --noEmit",
+    "compile:sol": "hardhat compile --show-stack-traces --force",
+    "compile:ts": "tsc --noEmit",
     "format": "prettier --write .",
     "lint": "prettier --check . && eslint --ignore-path .prettierignore \"./**/*.ts\"",
     "test": "hardhat test --network test"
