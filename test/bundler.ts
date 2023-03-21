@@ -1,3 +1,4 @@
+import { UserOperationStruct } from "@account-abstraction/contracts"
 import { HttpRpcClient, SimpleAccountAPI } from "@account-abstraction/sdk"
 import { hexlify } from "@ethersproject/bytes"
 import { JsonRpcSigner } from "@ethersproject/providers"
@@ -29,6 +30,7 @@ describe("Bundler", () => {
     let token: ERC20Mintable
 
     before(async () => {
+        console.log("========== Before Hook Start ==========")
         console.log("entry point address:", ENTRYPOINT_ADDRESS)
 
         const signer = wrapGethSigner(ethers.provider.getSigner())
@@ -83,6 +85,7 @@ describe("Bundler", () => {
             .mint(account.getAccountAddress(), ethers.utils.parseEther("100"))
 
         // Approve paymaster to transfer account's token
+        console.log("Approve paymaster to transfer account's token")
         const op = await account.createSignedUserOp({
             target: token.address,
             data: token.interface.encodeFunctionData("approve", [
@@ -90,37 +93,30 @@ describe("Bundler", () => {
                 ethers.constants.MaxUint256,
             ]),
         })
-        const opHash = await bundler.sendUserOpToBundler(op)
-        const txHash = await account.getUserOpReceipt(opHash)
-        await ethers.provider.getTransactionReceipt(txHash!)
+        await sendUserOpAndWait(op)
+
+        console.log("========== Before Hook End ==========")
     })
 
-    it("should be able to mint token", async () => {
+    it("should pay by account to mint token", async () => {
         const mintAmount = ethers.utils.parseEther("100")
 
         const balanceBefore = await token.balanceOf(account.getAccountAddress())
 
-        let op = await account.createUnsignedUserOp({
+        const op = await account.createSignedUserOp({
             target: token.address,
             data: token.interface.encodeFunctionData("mint", [
                 await account.getAccountAddress(),
                 mintAmount.toString(),
             ]),
         })
-        op = await account.signUserOp(op)
-
-        const opHash = await bundler.sendUserOpToBundler(op)
-        console.log("op hash:", opHash)
-        const txHash = await account.getUserOpReceipt(opHash)
-        console.log("tx hash:", txHash)
-        const receipt = await ethers.provider.getTransactionReceipt(txHash!)
-        console.log("receipt:", receipt)
+        await sendUserOpAndWait(op)
 
         const balanceAfter = await token.balanceOf(account.getAccountAddress())
         expect(balanceAfter.sub(balanceBefore)).to.equal(mintAmount)
     })
 
-    it("should be able to pay by paymaster", async () => {
+    it("should pay by paymaster to mint token", async () => {
         const mintAmount = ethers.utils.parseEther("100")
 
         const ethBalanceBefore = await ethers.provider.getBalance(
@@ -152,10 +148,7 @@ describe("Bundler", () => {
         op.preVerificationGas = await account.getPreVerificationGas(partialOp)
         op = await account.signUserOp(op)
 
-        const opHash = await bundler.sendUserOpToBundler(op)
-        const txHash = await account.getUserOpReceipt(opHash)
-        const receipt = await ethers.provider.getTransactionReceipt(txHash!)
-        console.log("receipt:", receipt.logs)
+        await sendUserOpAndWait(op)
 
         const ethBalanceAfter = await ethers.provider.getBalance(
             account.getAccountAddress(),
@@ -166,4 +159,19 @@ describe("Bundler", () => {
         expect(ethBalanceAfter).to.equal(ethBalanceBefore)
         expect(tokenBalanceAfter.sub(tokenBalanceBefore)).to.equal(mintAmount)
     })
+
+    async function sendUserOpAndWait(userOp: UserOperationStruct) {
+        const opHash = await bundler.sendUserOpToBundler(userOp)
+        console.log("op hash:", opHash)
+        const txHash = await account.getUserOpReceipt(opHash)
+        console.log("tx hash:", txHash)
+        const { logs, ...receipt } =
+            await ethers.provider.getTransactionReceipt(txHash!)
+        console.log("receipt:", receipt)
+        console.log("receipt logs", logs)
+        return {
+            logs,
+            ...receipt,
+        }
+    }
 })
