@@ -68,7 +68,7 @@ describe("Bundler", () => {
             .connect(signer)
             .deposit({ value: ethers.utils.parseEther("0.1") })
 
-        // Stake for paymaster on endtry point
+        // Stake for paymaster on entry point
         await paymaster.connect(signer).addStake(120, {
             value: ethers.utils.parseEther("0.1"),
         })
