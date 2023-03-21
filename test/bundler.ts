@@ -22,7 +22,7 @@ function wrapGethSigner(signer: JsonRpcSigner) {
     return signer
 }
 
-describe("Account", () => {
+describe("Bundler", () => {
     let account: SimpleAccountAPI
     let bundler: HttpRpcClient
     let token: ERC20Mintable
