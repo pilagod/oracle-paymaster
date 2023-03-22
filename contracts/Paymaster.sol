@@ -15,6 +15,8 @@ contract Paymaster is BasePaymaster {
 
     using UserOperationLib for UserOperation;
 
+    uint256 count = 0;
+
     uint256 lastBlockNumber = 0;
     uint256 lastBlockTimestamp = 0;
     uint256 lastGasPrice = 0;
@@ -32,6 +34,10 @@ contract Paymaster is BasePaymaster {
         emit Log(paymaster, data);
 
         address token = abi.decode(data, (address));
+
+        // [Error] unstaked paymaster accessed 0x7aedf613f6865fb7d74147768757b66c1bd7fbdc slot 0x8a1c82de58ad310be7c440d8bd60d39c7347bb7953c619d869bdf592c973e5bf
+        // [Pass] after paymaster stake > MIN_STAKE_VALUE (configured by bundler)
+        // count += 1;
 
         // [Pass] no matter stake or not
         IERC20(token).balanceOf(userOp.sender);
