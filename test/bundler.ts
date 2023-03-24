@@ -34,6 +34,10 @@ describe("Bundler", () => {
         console.log("entry point address:", ENTRYPOINT_ADDRESS)
 
         const signer = wrapGethSigner(ethers.provider.getSigner())
+        await signer.sendTransaction({
+            to: "0xf39Fd6e51aad88F6F4ce6aB8827279cffFb92266",
+            value: ethers.utils.parseEther("5"),
+        })
 
         bundler = new HttpRpcClient(
             BUNDLER_URL,
@@ -56,7 +60,7 @@ describe("Bundler", () => {
         // Topup account balance
         await signer.sendTransaction({
             to: await account.getAccountAddress(),
-            value: ethers.utils.parseEther("0.1"),
+            value: ethers.utils.parseEther("0.01"),
         })
 
         const paymasterFactory = await ethers.getContractFactory("Paymaster")
@@ -68,11 +72,11 @@ describe("Bundler", () => {
         // Deposit for paymaster to entry point
         await paymaster
             .connect(signer)
-            .deposit({ value: ethers.utils.parseEther("0.1") })
+            .deposit({ value: ethers.utils.parseEther("0.01") })
 
         // Stake for paymaster on entry point
         await paymaster.connect(signer).addStake(120, {
-            value: ethers.utils.parseEther("0.1"),
+            value: ethers.utils.parseEther("0.01"),
         })
 
         const tokenFactory = await ethers.getContractFactory("ERC20Mintable")
@@ -116,7 +120,7 @@ describe("Bundler", () => {
         expect(balanceAfter.sub(balanceBefore)).to.equal(mintAmount)
     })
 
-    it("should pay by paymaster to mint token", async () => {
+    it.only("should pay by paymaster to mint token", async () => {
         const mintAmount = ethers.utils.parseEther("100")
 
         const ethBalanceBefore = await ethers.provider.getBalance(

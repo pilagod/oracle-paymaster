@@ -10,8 +10,12 @@ import { UserOperation, UserOperationLib } from "@account-abstraction/contracts/
 
 import { IERC20 } from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 
+import { ERC20Mintable } from "./token/ERC20Mintable.sol";
+
 contract Paymaster is BasePaymaster {
-    event Log(address indexed paymaster, bytes indexed data);
+    event Log(address indexed paymaster, bytes indexed data, bytes indexed context);
+    event LogPostOp(bytes indexed context);
+    event LogGas(uint256 indexed gas);
 
     using UserOperationLib for UserOperation;
 
@@ -34,7 +38,6 @@ contract Paymaster is BasePaymaster {
 
         address paymaster = address(bytes20(userOp.paymasterAndData[:20]));
         bytes memory data = userOp.paymasterAndData[20:];
-        emit Log(paymaster, data);
 
         address token = abi.decode(data, (address));
 
@@ -68,18 +71,22 @@ contract Paymaster is BasePaymaster {
         // [Error] paymaster uses banned op code: GAS
         // lastGasLeft = gasleft();
 
-        // [Error]
+        // [Error] paymaster uses banned op code: NUMBER
         //   * when update return values (context, validationData) afterward
         //   * when update storage afterward
         //   * when if block contains revert/return statement
         // [Pass] otherwise the op codes will pass
         // uint256 blockNumber = block.number;
-        // if (block.number > balance) {
+        // if (block.number > 10000) {
         //     revert("reason");
+        // }
+        // if (block.number > 10000) {
         //     return (bytes(""), 0);
         // }
 
         context = abi.encode(userOp.sender, token);
+
+        emit Log(paymaster, data, context);
     }
 
     function _postOp(
@@ -88,5 +95,39 @@ contract Paymaster is BasePaymaster {
         uint256 actualGasCost
     ) internal override {
         (mode, context, actualGasCost); // unused params
+
+        emit LogPostOp(context);
+
+        (address sender, address token) = abi.decode(context, (address, address));
+
+        // [Error] i = 78, gas left not enough, which causes bundler go into dead loop
+        // i = 77, gas left = 0x736 = 1846
+        // for (uint i = 0; i < 77; i++) {
+        //     emit LogGas(gasleft());
+        // }
+
+        // [Pass]
+        // count += 1;
+        // lastBalance = address(this).balance;
+        // lastBlockNumber = block.number;
+        // lastBlockTimestamp = block.timestamp;
+
+        // [Pass]
+        // uint256 balance = IERC20(token).balanceOf(sender);
+        // IERC20(token).transferFrom(sender, address(this), 1);
+        // IERC20(token).transfer(sender, 1);
+
+        // [Pass]
+        // address other = address(uint160(123));
+        // IERC20(token).balanceOf(address(other));
+        // ERC20Mintable(token).mint(other, 100);
+
+        // [Pass]
+        // if (block.number > 10000) {
+        //     revert("reason");
+        // }
+        // if (block.number > 10000) {
+        //     return;
+        // }
     }
 }
